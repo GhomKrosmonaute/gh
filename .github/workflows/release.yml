@@ -1,7 +1,8 @@
 name: Release
 
-# A push to main whose package.json version is not on npm yet publishes that version, then tags
-# it and opens a GitHub release. Releasing is: npm version patch|minor|major && git push --follow-tags
+# A push to main whose package.json version is not on npm yet publishes that version, then opens
+# a GitHub release for minor and major versions (patches only go to npm).
+# Releasing is: npm version patch|minor|major && git push --follow-tags
 on:
   push:
     branches: [main]
@@ -35,6 +36,12 @@ jobs:
           name=$(node -p 'require("./package.json").name')
           version=$(node -p 'require("./package.json").version')
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Patch versions (x.y.Z, Z > 0) go to npm without a GitHub release: the next minor or
+          # major release's generated notes cover them.
+          case "$version" in
+            *.*.0) echo "github_release=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "github_release=false" >> "$GITHUB_OUTPUT" ;;
+          esac
           if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
             echo "$name@$version is already on npm: nothing to release."
             echo "publish=false" >> "$GITHUB_OUTPUT"
@@ -55,7 +62,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: GitHub release
-        if: steps.version.outputs.publish == 'true'
+        if: steps.version.outputs.publish == 'true' && steps.version.outputs.github_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.version.outputs.version }}
