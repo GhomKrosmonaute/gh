@@ -154,7 +154,9 @@ git push --follow-tags
 ```
 
 The [Release workflow](.github/workflows/release.yml) then checks and builds the package, publishes
-it to npm with provenance, and opens a GitHub release with generated notes. Pushes that keep the
+it to npm with provenance, and, for a minor or major version, opens a GitHub release with generated
+notes. Patch versions only go to npm (their tag is pushed all the same); the next minor release's
+notes cover them. Pushes that keep the
 same version publish nothing.
 
 npm authentication, set up once:
