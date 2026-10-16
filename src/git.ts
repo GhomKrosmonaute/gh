@@ -13,7 +13,7 @@ export async function git(args: string[]): Promise<Captured> {
   }
 }
 
-export async function gitConfig(key: string, scope?: "global"): Promise<string | null> {
+export async function gitConfig(key: string, scope?: "global" | "local"): Promise<string | null> {
   const result = await git(["config", ...(scope ? [`--${scope}`] : []), "--get", key]);
   return result.code === 0 ? result.stdout.replace(/\n$/, "") : null;
 }
@@ -28,6 +28,13 @@ export async function gitConfigAll(key: string, scope?: "global"): Promise<strin
     key,
   ]);
   return result.code === 0 ? result.stdout.split("\0").slice(0, -1) : [];
+}
+
+export async function setLocal(key: string, value: string): Promise<void> {
+  const result = await git(["config", "--local", key, value]);
+  if (result.code !== 0) {
+    throw new CliError(`git config --local ${key} failed: ${result.stderr.trim()}`);
+  }
 }
 
 export async function setGlobal(args: string[]): Promise<void> {
@@ -165,6 +172,16 @@ export function selfScript(): string {
 /** The credential.helper value that makes git ask this program for credentials. */
 export function helperCommand(): string {
   return `!${shellQuote(process.execPath)} ${shellQuote(selfScript())} credential`;
+}
+
+/**
+ * The command of a config-based hook (git 2.54+) that runs `ghom-gh identity <event>`. git appends
+ * "$@" to it, which lands as arguments of the inner shell. When node or ghom-gh is gone (uninstalled
+ * without `setup --uninstall`), it does nothing rather than block every commit.
+ */
+export function hookCommand(event: string, node = process.execPath, script = selfScript()): string {
+  const inner = `test -e "$0" && test -e "$1" || exit 0; s=$1; shift; exec "$0" "$s" identity ${event} "$@"`;
+  return `sh -c '${inner}' ${shellQuote(node)} ${shellQuote(script)}`;
 }
 
 export function isOwnHelper(value: string): boolean {
