@@ -64,10 +64,10 @@ export async function run(args: string[]): Promise<number> {
   // gh reads its token from the environment; git reaches it through the credential helper.
   const tokenEnv =
     host === "github.com" ? { GH_TOKEN: token } : { GH_ENTERPRISE_TOKEN: token, GH_HOST: host };
-  const env = withGitConfig(
-    { ...process.env, ...tokenEnv, GHOM_GH_USER: login, GHOM_GH_HOST: host },
-    sessionGitConfig(host),
-  );
+  // Only --as pins git to one account. Otherwise the helper picks per repository, so a
+  // `git fetch --all` over remotes of different accounts uses the right one for each.
+  const pinEnv = forced ? { GHOM_GH_USER: login, GHOM_GH_HOST: host } : {};
+  const env = withGitConfig({ ...process.env, ...tokenEnv, ...pinEnv }, sessionGitConfig(host));
   try {
     return await passthrough(program, programArgs, { env });
   } catch (error) {
