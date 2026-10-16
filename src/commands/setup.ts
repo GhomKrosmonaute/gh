@@ -4,6 +4,7 @@ import {
   gitConfig,
   gitConfigAll,
   helperCommand,
+  hookCommand,
   isOwnHelper,
   selfScript,
   setGlobal,
@@ -12,6 +13,29 @@ import { CliError, c, info, print, warn } from "../ui.js";
 
 const helperKey = (host: string) => `credential.https://${host}.helper`;
 const pathKey = (host: string) => `credential.https://${host}.useHttpPath`;
+
+// Config-based hooks (git 2.54+) run next to each repository's own hooks; older git ignores them.
+const HOOKS = {
+  "ghom-gh-identity-clone": "post-checkout",
+  "ghom-gh-identity-commit": "pre-commit",
+};
+
+async function installHooks(): Promise<void> {
+  for (const [name, event] of Object.entries(HOOKS)) {
+    await setAll(`hook.${name}.event`, [event]);
+    await setAll(`hook.${name}.command`, [hookCommand(event)]);
+  }
+}
+
+async function uninstallHooks(): Promise<boolean> {
+  let removed = false;
+  for (const name of Object.keys(HOOKS)) {
+    if (await gitConfig(`hook.${name}.command`, "global")) removed = true;
+    await setGlobal(["--unset-all", `hook.${name}.event`]);
+    await setGlobal(["--unset-all", `hook.${name}.command`]);
+  }
+  return removed;
+}
 
 export async function integrationStatus(hosts: string[]): Promise<Record<string, boolean>> {
   const entries = await Promise.all(
@@ -59,6 +83,7 @@ export async function reinstallHelpers(config: Config): Promise<void> {
   ])) {
     await install(config, host);
   }
+  if (config.setup) await installHooks();
 }
 
 export async function setup(args: string[]): Promise<number> {
@@ -76,11 +101,16 @@ export async function setup(args: string[]): Promise<number> {
   }
 
   for (const host of hosts) await install(config, host);
+  await installHooks();
   await saveConfig(config);
 
   info(`git now asks ghom-gh for HTTPS credentials on ${hosts.map(c.bold).join(", ")}.`);
   print(
     "  Plain git push / pull / clone use the account with the highest permission on each repo.",
+  );
+  print(
+    "  Commits are authored as that account (its GitHub name and noreply address), set per repo\n" +
+      "  on clone or on the first commit; git config ghom-gh.identity false turns it off.",
   );
   print(
     c.dim(
@@ -111,6 +141,10 @@ async function uninstall(config: Config): Promise<number> {
         `${host} has no credential helper any more; gh auth setup-git --hostname ${host} brings back gh's.`,
       );
     }
+  }
+  if (await uninstallHooks()) {
+    restored++;
+    info("Removed the commit identity hooks (repositories keep the identity already set).");
   }
   delete config.setup;
   await saveConfig(config);

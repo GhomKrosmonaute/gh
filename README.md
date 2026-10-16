@@ -95,6 +95,25 @@ $ git push
 ghom-gh: github.com/acme/website as jane-at-acme (maintain)
 ```
 
+Commits follow the same account, so the history of a repository does not fill up with an identity
+that has nothing to do with it. `setup` also adds two git hooks (config-based, git 2.54+; they run
+next to each repository's own hooks):
+
+- after `git clone`, the clone gets the account's GitHub name and noreply address
+  (`<id>+<login>@users.noreply.github.com`) as its local `user.name` / `user.email`;
+- in a repository cloned before, the first `git commit` sets them and stops, because git already
+  picked the author when the hook runs: run the same commit again.
+
+```console
+$ git commit -m "Fix the footer"
+ghom-gh: this repository now commits as Jane <123+jane-at-acme@users.noreply.github.com> (jane-at-acme, maintain on github.com/acme/website).
+ghom-gh: nothing was committed; run the same git commit again.
+```
+
+A `user.email` you set in a repository yourself is left alone. `ghom-gh identity` applies the
+identity to the current clone by hand, and `git config ghom-gh.identity false` (in a repository, or
+`--global`) turns it off.
+
 - A login written in the remote URL wins: `https://<login>@github.com/owner/repo.git`.
 - SSH remotes are not affected; use `ghom-gh push` for them, or switch them to HTTPS.
 - `GHOM_GH_QUIET=1` hides the line above.
@@ -109,6 +128,7 @@ Install `ghom-gh` globally before running `setup`: git calls the exact path it w
 - Permissions are cached for 10 minutes per repository so that git, which may ask for credentials
   several times in one command, does not query the API for every account each time. A failed push,
   or credentials rejected by GitHub, clears that repository's entry.
+- Account identities (name and noreply address, no token) are cached a day in `identities.json`.
 - Organizations with SAML SSO need the token authorized for them; `ghom-gh check` shows the link.
 
 ## Development

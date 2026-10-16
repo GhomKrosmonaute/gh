@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { add, importAccounts, list, prefer, remove } from "./commands/accounts.js";
 import { check } from "./commands/check.js";
 import { credential } from "./commands/credential.js";
+import { identity } from "./commands/identity.js";
 import { push } from "./commands/push.js";
 import { run } from "./commands/run.js";
 import { setup } from "./commands/setup.js";
@@ -25,9 +26,11 @@ ${c.bold("Repositories")}
                                      ${c.dim("--as <login> to force an account, --refresh to skip the cache")}
   ghom-gh run [options] -- <cmd…>    Run any command (gh, git…) as that account
                                      ${c.dim("--repo <owner/repo> when not in a clone, --as <login>")}
+  ghom-gh identity                   Make this clone commit as that account (name + noreply email)
 
 ${c.bold("Plain git")}
-  ghom-gh setup                      Make git push / pull / clone over HTTPS pick the account itself
+  ghom-gh setup                      Make git push / pull / clone over HTTPS pick the account itself,
+                                     ${c.dim("and commits be authored as that account")}
   ghom-gh setup --uninstall          Give git its previous credential helper back
 
 [repo] is owner/repo, host/owner/repo or a clone URL, and defaults to the current clone's remote.
@@ -46,6 +49,7 @@ const commands: Record<string, (args: string[]) => Promise<number>> = {
   push,
   run,
   setup,
+  identity,
   credential,
 };
 
