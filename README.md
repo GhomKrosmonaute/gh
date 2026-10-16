@@ -74,7 +74,9 @@ SSH key, not `ghom-gh`, would decide the account.
 `ghom-gh run` runs a command with the best account for a repository: gh gets its token through
 `GH_TOKEN`, git through the credential helper, which picks the account for each repository it
 reaches (so `git fetch --all` over remotes of different accounts works). `--as` pins one account
-for everything.
+for everything. gh commands are matched on the repository gh acts on: `-R`, then
+`GH_REPO`, then the remote `gh repo set-default` chose, else `upstream`, `github`, `origin`. So in a
+fork, `ghom-gh run -- gh pr create` uses the best account on the parent repository, not on the fork.
 
 ```sh
 ghom-gh run -- gh pr create --fill

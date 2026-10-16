@@ -1,6 +1,9 @@
+import { basename } from "node:path";
+
 import { parseArgs, stringFlag } from "../args.js";
 import { isNotFound, passthrough } from "../exec.js";
 import { ghToken } from "../gh.js";
+import { ghTargetRepo } from "../gh-target.js";
 import { currentRepo, sessionGitConfig, withGitConfig } from "../git.js";
 import { parseRepoSpec, type RepoRef, repoName } from "../remote.js";
 import { resolve } from "../resolve.js";
@@ -29,7 +32,12 @@ export async function run(args: string[]): Promise<number> {
     ref = parseRepoSpec(repoSpec);
     if (!ref) throw new CliError(`"${repoSpec}" is neither owner/repo nor a clone URL.`);
   } else {
-    ref = await currentRepo().catch((error: unknown) => {
+    // gh acts on the base repository (in a fork, the parent once it is a remote), not on the one
+    // the branch is pushed to.
+    if (/^gh(\.exe)?$/i.test(basename(program))) {
+      ref = await ghTargetRepo(programArgs).catch(() => null);
+    }
+    ref ??= await currentRepo().catch((error: unknown) => {
       if (forced) return null;
       throw error;
     });
