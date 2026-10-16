@@ -1,6 +1,6 @@
 {
   "name": "@ghom/gh",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-account companion for the GitHub CLI: keeps a list of gh accounts and pushes to any repository as the account with the highest permission, without gh auth switch.",
   "type": "module",
   "bin": {
