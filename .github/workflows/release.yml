@@ -1,0 +1,67 @@
+name: Release
+
+# A push to main whose package.json version is not on npm yet publishes that version, then tags
+# it and opens a GitHub release. Releasing is: npm version patch|minor|major && git push --follow-tags
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # tag and GitHub release
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v7
+        with:
+          # Trusted publishing needs npm 11.5.1 or later, which Node 24 ships.
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+
+      - name: Is this version already on npm?
+        id: version
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          name=$(node -p 'require("./package.json").name')
+          version=$(node -p 'require("./package.json").version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$name@$version is already on npm: nothing to release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$NPM_TOKEN" ] && ! npm view "$name" name >/dev/null 2>&1; then
+            # Trusted publishing is configured on an existing package only.
+            echo "::warning title=First publish::$name is not on npm yet. Publish $version by hand (npm publish) or add an NPM_TOKEN secret and re-run this workflow, then set up trusted publishing (see README, Releasing)."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # prepublishOnly runs the checks and the build. Without NPM_TOKEN, npm authenticates through
+      # the trusted publisher configured on npmjs.com.
+      - name: Publish to npm
+        if: steps.version.outputs.publish == 'true'
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: GitHub release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          fi

@@ -1,0 +1,53 @@
+{
+  "name": "@ghom/gh",
+  "version": "0.1.0",
+  "description": "Multi-account companion for the GitHub CLI: keeps a list of gh accounts and pushes to any repository as the account with the highest permission, without gh auth switch.",
+  "type": "module",
+  "bin": {
+    "ghom-gh": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "bun src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run lint && bun test",
+    "prepublishOnly": "bun run check && bun run build"
+  },
+  "keywords": [
+    "gh",
+    "github",
+    "cli",
+    "multi-account",
+    "git",
+    "push",
+    "credential-helper"
+  ],
+  "author": "ghom",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GhomKrosmonaute/gh.git"
+  },
+  "homepage": "https://github.com/GhomKrosmonaute/gh#readme",
+  "bugs": {
+    "url": "https://github.com/GhomKrosmonaute/gh/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/bun": "^1.4.3",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
