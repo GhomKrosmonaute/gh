@@ -70,7 +70,9 @@ SSH key, not `ghom-gh`, would decide the account.
 ### Any other command
 
 `ghom-gh run` runs a command with the best account for a repository: gh gets its token through
-`GH_TOKEN`, git through the credential helper.
+`GH_TOKEN`, git through the credential helper, which picks the account for each repository it
+reaches (so `git fetch --all` over remotes of different accounts works). `--as` pins one account
+for everything.
 
 ```sh
 ghom-gh run -- gh pr create --fill
