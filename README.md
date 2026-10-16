@@ -22,6 +22,8 @@ To https://github.com/acme/website.git
    1556ab9..8f2c4e1  main -> main
 ```
 
+https://github.com/user-attachments/assets/4174bae6-392f-40d9-8af7-f85b7741bf09
+
 ## Install
 
 Requires Node.js 20+ and gh (signed in with `gh auth login`).
