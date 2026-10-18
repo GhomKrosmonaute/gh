@@ -47,7 +47,7 @@ jobs:
             echo "publish=false" >> "$GITHUB_OUTPUT"
           elif [ -z "$NPM_TOKEN" ] && ! npm view "$name" name >/dev/null 2>&1; then
             # Trusted publishing is configured on an existing package only.
-            echo "::warning title=First publish::$name is not on npm yet. Publish $version by hand (npm publish) or add an NPM_TOKEN secret and re-run this workflow, then set up trusted publishing (see README, Releasing)."
+            echo "::warning title=First publish::$name is not on npm yet. Publish $version by hand (npm publish) or add an NPM_TOKEN secret and re-run this workflow, then add GhomKrosmonaute/gh and release.yml under the package's Settings → Trusted publishing on npmjs.com, and delete the secret."
             echo "publish=false" >> "$GITHUB_OUTPUT"
           else
             echo "publish=true" >> "$GITHUB_OUTPUT"
